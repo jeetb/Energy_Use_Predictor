@@ -1,0 +1,129 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#install.packages('tidyverse')
+library(tidyverse)
+```
+```{r}
+og_data <- read_csv('/Users/lee/Downloads/IDS_data.csv')
+meta_data <- read_csv('https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/data_dictionary.csv')
+```
+```{r}
+# Data cleaning 
+# Dropped 14 columns that has only one variable in it
+# handling 11 columns that contains na values- changing na values to "not installed" 
+# converted every char type columns in num type columns with label encoding
+```
+
+```{r}
+#find out columns that have more than 2 values in it
+
+multi_value_columns <- sapply(og_data, function(x) length(unique(x)) > 1)
+
+```
+
+
+```{r}
+#checking the columns that only contains one value
+
+single_value_columns <- sapply(og_data, function(x)length(unique(x)) == 1)
+names(og_data)[single_value_columns]
+```
+
+```{r}
+#unique(og_data["out.electricity.heating_hp_bkup.energy_consumption"])
+#unique(og_data["out.propane.heating.energy_consumption"])
+#unique(og_data["out.natural_gas.hot_water.energy_consumption"])
+
+# create new data frame to use without 14 single valued columns
+
+new_data <- og_data[multi_value_columns]
+new_data
+```
+
+
+```{r}
+#checking null values and na values
+# There are no null value in the dataframe 
+is.null(new_data) #There is no null values
+```
+```{r}
+#Check the na value in the data frame - 16594176
+sum(is.na(new_data))
+columns_with_na <- colnames(new_data)[colSums(is.na(new_data)) > 0]
+
+columns_with_na
+
+#sum(is.na(new_data[,'upgrade.insulation_foundation_wall']))
+#new_data[!is.na(new_data[,'upgrade.insulation_foundation_wall']),'upgrade.insulation_foundation_wall']
+```
+```{r}
+# checking column values that contains na 
+unique(new_data$upgrade.insulation_roof)
+unique(new_data$upgrade.water_heater_efficiency)
+unique(new_data$upgrade.infiltration_reduction)
+unique(new_data$upgrade.geometry_foundation_type)
+unique(new_data$upgrade.clothes_dryer)
+unique(new_data$upgrade.insulation_ceiling)
+unique(new_data$upgrade.ducts)
+unique(new_data$upgrade.hvac_heating_type)
+unique(new_data$upgrade.insulation_wall)
+unique(new_data$upgrade.insulation_foundation_wall)
+unique(new_data$upgrade.cooking_range)
+
+
+```
+```{r}
+# change na values with another character such as "not installed" and than change every char values in numeric type.
+
+new_data[is.na(new_data)] <- "not installed"
+
+#checking it again
+
+unique(new_data$upgrade.insulation_roof)
+unique(new_data$upgrade.water_heater_efficiency)
+unique(new_data$upgrade.infiltration_reduction)
+unique(new_data$upgrade.geometry_foundation_type)
+unique(new_data$upgrade.clothes_dryer)
+unique(new_data$upgrade.insulation_ceiling)
+unique(new_data$upgrade.ducts)
+unique(new_data$upgrade.hvac_heating_type)
+unique(new_data$upgrade.insulation_wall)
+unique(new_data$upgrade.insulation_foundation_wall)
+unique(new_data$upgrade.cooking_range)
+
+
+```
+```{r}
+#checking again if there are na values in data
+
+sum(is.na(new_data))
+```
+
+```{r}
+#checking datatypes
+str(new_data)
+```
+```{r}
+# converting all charter columns into num 
+
+char_cols <- sapply(new_data, is.character)
+new_data[char_cols] <- lapply(new_data[char_cols], function(x) as.numeric(as.factor(x)))
+
+```
+
+```{r}
+#checking dataframe type
+
+str(new_data)
+
+
+```
+```{r}
+unique(new_data$in.misc_well_pump)
+```
+
+

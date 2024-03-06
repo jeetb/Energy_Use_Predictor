@@ -1,0 +1,47 @@
+install.packages('arrow')
+library('arrow')
+df_houses <- read_parquet('C:\\Users\\jbardapu\\Downloads\\static_house_info.parquet')
+length((df_houses$bldg_id))
+length(unique(df_houses$in.ahs_region))
+df_houses[df_houses$in.county=='G4500010','date_time']
+df_102063_house <- read_parquet('C:\\Users\\jbardapu\\Downloads\\102063.parquet')
+df_houses[df_houses$bldg_id=='102063',]
+str(df_102063_house$out.fuel_oil)
+df_G4500010_county <- read.csv('C:\\Users\\jbardapu\\Downloads\\G4500010.csv')
+# 1. iterate through the df_houses dataframe, and capture bldg_id and county.
+# 2. download dataframes for both, filter out for July,
+# join them on timestamp, add the data from df_houses and append them to a large dataframe.
+# 3. after iteration, there should be a giant dataframe containing the hour by hour energy usage and weather data for
+# all houses.
+# 4. then depending on the user selection, group them by county, add up all the hourly energy usage to create a county 
+# energy usage hour by hour. If only a particular house is required, then filter out the hour by hour data of that house
+# only.
+
+install.packages('tidyverse')
+library(tidyverse)
+
+createCombined <- function(){
+  df_houses <- read_parquet('https://intro-datascience.s3.us-east-2.amazonaws.com/SCdata/static_house_info.parquet')
+  df_houses_cut <- subset(df_houses, select=-c(weight, upgrade, applicability, in.ahs_region, in.ashrae_iecc_climate_zone_2004, in.ashrae_iecc_climate_zone_2004_2_a_split, in.cec_climate_zone, in.census_division, in.census_division_recs, in.census_region, in.clothes_washer_presence, in.corridor, in.dehumidifier, in.door_area, in.doors, in.eaves, in.electric_vehicle, in.emissions_electricity_folders, in.emissions_electricity_units, in.emissions_electricity_values_or_filepaths, in.emissions_fossil_fuel_units, in.emissions_fuel_oil_values, in.emissions_natural_gas_values, in.emissions_propane_values, in.emissions_scenario_names, in.emissions_types, in.emissions_wood_values, in.generation_and_emissions_assessment_region, in.geometry_building_horizontal_location_mf, in.geometry_building_horizontal_location_sfa, in.geometry_building_level_mf, in.geometry_building_number_units_mf, in.geometry_building_number_units_sfa, in.geometry_building_type_acs,in.geometry_building_type_height, in.geometry_building_type_recs, in.geometry_stories_low_rise, in.geometry_story_bin, in.heating_setpoint_has_offset, in.holiday_lighting, in.hot_water_distribution, in.hvac_has_shared_system, in.hvac_secondary_heating_efficiency, in.hvac_secondary_heating_type_and_fuel, in.hvac_shared_efficiencies, in.hvac_system_is_faulted, in.hvac_system_single_speed_ac_airflow, in.hvac_system_single_speed_ac_charge, in.hvac_system_single_speed_ashp_airflow, in.hvac_system_single_speed_ashp_charge, in.interior_shading, in.iso_rto_region, in.lighting_interior_use, in.lighting_other_use, in.location_region, in.mechanical_ventilation, in.natural_ventilation, in.neighbors, in.overhangs, in.plug_loads, in.radiant_barrier, in.schedules, in.simulation_control_run_period_begin_day_of_month, in.simulation_control_run_period_begin_month, in.simulation_control_run_period_calendar_year, in.simulation_control_run_period_end_day_of_month, in.simulation_control_run_period_end_month, in.simulation_control_timestep, in.solar_hot_water, in.state, in.units_represented, in.water_heater_in_unit, upgrade.hvac_cooling_efficiency))
+  #houses list
+  houses_list = list()
+  for(house in 1:nrow(df_houses_cut)) {
+    bldg_id <- df_houses[house, 'bldg_id']
+    county <- df_houses[house, 'in.county']
+    df_bldg <- read_parquet(paste0('https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/2023-houseData/',bldg_id,'.parquet'))
+    df_county <- read.csv(paste0('https://intro-datascience.s3.us-east-2.amazonaws.com/SCdata/weather/2023-weather-data/',county,'.csv'))
+    #converting date_time column in df_county to posixct
+    df_county$date_time <- as.POSIXct(df_county$date_time, format="%Y-%m-%d %H:%M:%S")
+    #filtering out only July data
+    df_county_july <- df_county%>% filter(date_time_posix>= as.POSIXct("2018-07-01 00:00:00")&date_time_posix<= as.POSIXct("2018-07-31 23:00:00"))
+    df_bldg_july <- df_bldg%>% filter(time>= as.POSIXct("2018-07-01 00:00:00")&time<= as.POSIXct("2018-07-31 23:00:00"))
+    #merge the dataframes. all.x is true because we need to be able to predict energy consumption for any hour in July,
+    #so we have to include that even if we don't have the corresponding county data.
+    merged_july <- merge(df_house_july, df_county_july, by.x="time", by.y="date_time_posix", all.x=TRUE)
+    #adding in the general house attributes
+    merged_july[, colnames(df_houses_cut)] <- df_houses_cut[house,]
+    houses_list[[house]]<-merged_july 
+  }
+  final_data <- do.call(rbind, houses_list)
+  return (final_data)
+}
